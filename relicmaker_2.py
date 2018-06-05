@@ -12,7 +12,7 @@ print(relics)"""
 from couchbase.cluster import Cluster
 from couchbase.cluster import PasswordAuthenticator
 cluster = Cluster('couchbase://localhost')
-authenticator = PasswordAuthenticator('adminname', 'password')
+authenticator = PasswordAuthenticator('DavidH', 'Warframe')
 #(username, password) created in couchbase with the cluster. user needs to have read and write privleges
 cluster.authenticate(authenticator)
 bucket = cluster.open_bucket('Rewards')
@@ -63,14 +63,13 @@ def logrelic():
     node = raw_input("node: ")
     #check for node, create if missing
     planetinfo= bucket.n1ql_query(N1QLQuery('Select nodelist From Rewards where planet = $p and nodelist is not missing', p = planet)).get_single_result()
-    new_node(node, planet)
-    """if planetinfo==None:
-      bucket.n1ql_query(N1QLQuery('UPDATE Rewards set nodelist = ARRAY_APPEND(Rewards.nodelist, $n) where nodelist is not missing and planet = '+ repr(planet), n = node)).execute()
-      bucket.n1ql_query(N1QLQuery('UPSERT INTO Rewards (Key, Value) VALUES ($n, {"planet" : '+ repr(planet) +', "node": $n , "type" : "nodesummary", "round1" : {}, "round2" : {}, "round3" : {}, "round4" : {}   })', n=node)).execute()
+    
+    if planetinfo==None:
+        new_node(node, planet)
     elif node not in planetinfo["nodelist"]:
-      bucket.n1ql_query(N1QLQuery('UPDATE Rewards set nodelist = ARRAY_APPEND(Rewards.nodelist, $n) where nodelist is not missing and planet = '+ repr(planet), n = node)).execute()
-      bucket.n1ql_query(N1QLQuery('UPSERT INTO Rewards (Key, Value) VALUES ($n, {"planet" : '+ repr(planet) +', "node": $n , "type" : "nodesummary", "round1" : {}, "round2" : {}, "round3" : {}, "round4" : {}   })', n=node)).execute()
-"""
+        new_node(node, planet)
+      
+
     fulllist, fullcount = import_list(node)
     
     while True:
