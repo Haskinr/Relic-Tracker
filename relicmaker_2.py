@@ -12,7 +12,7 @@ print(relics)"""
 from couchbase.cluster import Cluster
 from couchbase.cluster import PasswordAuthenticator
 cluster = Cluster('couchbase://localhost')
-authenticator = PasswordAuthenticator('username', 'password')
+authenticator = PasswordAuthenticator('DavidH', 'Warframe')
 #(username, password) created in couchbase with the cluster. user needs to have read and write privleges
 cluster.authenticate(authenticator)
 bucket = cluster.open_bucket('Rewards')
@@ -81,6 +81,9 @@ def logrelic():
           while ro.isdigit() == False:
               ro=(raw_input("enter a number:" ))
       re = raw_input("reward: ")
+      if re == "q" or ro == "quit":
+        cont = False
+        break
       #check if reward has been previously entered in the database.  add if it isn't
       if re not in fulllist[int(ro)-1]: 
           print("not in there")
@@ -108,63 +111,54 @@ def logrelic():
 def new_node(nodename , planet):
     mission = raw_input("mission type: ")
     
-    stages = raw_input("number of stages: ")
-    while stages.isdigit() == False:
-        stages = raw_input("number of stages: ")
+    rounds = raw_input("number of rounds: ")
+    while rounds.isdigit() == False:
+        rounds = raw_input("number of rounds: ")
     stagestring = ""
-    for i in range(1, int(stages) + 1):
+    for i in range(1, int(rounds) + 1):
         stagestring = stagestring + '"round' + str(i) + '" : {}'
-        if i != int(stages):
+        if i != int(rounds):
             stagestring = stagestring + ', '
-    print(stagestring)
+    
     bucket.n1ql_query(N1QLQuery('UPDATE Rewards set nodelist = ARRAY_APPEND(Rewards.nodelist, $n) where nodelist is not missing and planet = '+ repr(planet), n = nodename)).execute()
-    bucket.n1ql_query(N1QLQuery('UPSERT INTO Rewards (Key, Value) VALUES ($n, {"planet" : '+ repr(planet) +', "node": $n , "type" : "nodesummary", "mission": '+repr(mission)+ ', ' + stagestring + ' })', n=nodename)).execute()
-
+    p=bucket.n1ql_query(N1QLQuery('UPSERT INTO Rewards (Key, Value) VALUES ($n, {"planet" : '+ repr(planet) +', "node": $n , "type" : "nodesummary", "rounds" : '+repr(rounds)+', "mission": '+repr(mission)+ ', ' + stagestring + ' }) returning *', n=nodename)).execute()
+    
+    
 
 #IMPORT FUNCTIONS
 def import_list(node):
     print(node)
-    r1 = N1QLQuery("SELECT round1 FROM Rewards WHERE node = " +'"'+ node+'"')# ' " ' single-quote, double-quote, single-quote so that the query reads ("node")
-    r2 = N1QLQuery("SELECT round2 FROM Rewards WHERE node = " +'"'+ node+'"')
-    r3 = N1QLQuery("SELECT round3 FROM Rewards WHERE node = " +'"'+ node+'"')
-    r4 = N1QLQuery("SELECT round4 FROM Rewards WHERE node = " +'"'+ node+'"')
-    round1 = []
-    count1 =[]
-    for row in bucket.n1ql_query(r1):
-        for key in row:
-          for item in row[key]:
-              
-              round1.append(str(item))
-              count1.append(row[key][item])
-              
-    round2 = []
-    count2 =[]
-    for row in bucket.n1ql_query(r2):
-        for key in row:
-          for item in row[key]:
-              round2.append(str(item))
-              count2.append(row[key][item])
-              
-    round3 = []
-    count3 =[]
-    for row in bucket.n1ql_query(r3):
-        for key in row:
-          for item in row[key]:
-            round3.append(str(item))
-            count3.append(row[key][item])
+    q = bucket.n1ql_query(N1QLQuery('SELECT rounds FROM Rewards where node = $n', n = node)).get_single_result()
+    while q == None:
+      #print(q)
+      q = bucket.n1ql_query(N1QLQuery('SELECT rounds FROM Rewards where node = $n', n = node)).get_single_result()
+    rounds = q["rounds"]
+    #r1 = N1QLQuery("SELECT round1 FROM Rewards WHERE node = " +'"'+ node+'"')# ' " ' single-quote, double-quote, single-quote so that the query reads ("node")
+    #r2 = N1QLQuery("SELECT round2 FROM Rewards WHERE node = " +'"'+ node+'"')
+    #r3 = N1QLQuery("SELECT round3 FROM Rewards WHERE node = " +'"'+ node+'"')
+    #r4 = N1QLQuery("SELECT round4 FROM Rewards WHERE node = " +'"'+ node+'"')
+    full_list = []
+    full_count = []
+    i = 1
+    while i <= int(rounds):
+        round1 = []
+        count1 =[]
+        r1 = N1QLQuery("SELECT round"+str(i)+" FROM Rewards WHERE node = " +'"'+ node+'"')
+        for row in bucket.n1ql_query(r1):
+            for key in row:
+              for item in row[key]:
+                  round1.append(str(item))
+                  
+                  count1.append(row[key][item])
+                  print(str(item), row[key][item])
+         
+        full_list.append(round1)
+        full_count.append(count1)
+        i += 1
             
-    round4 = []
-    count4 = []
-    for row in bucket.n1ql_query(r4):
-        for key in row:
-          for item in row[key]:
-            round4.append(str(item))
-            count4.append(row[key][item])
-            
-    print(round1, round2, round3, round4)
-    print(count1, count2, count3, count4)
-    return [round1, round2, round3, round4] , [count1, count2, count3, count4]
-#import_list("beryhinia")
+
+    return full_list, full_count
+#import_list("bounty 5")
 logrelic()
 #new_node("wampus", "krampus")
 """menu()"""
