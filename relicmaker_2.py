@@ -12,7 +12,7 @@ print(relics)"""
 from couchbase.cluster import Cluster
 from couchbase.cluster import PasswordAuthenticator
 cluster = Cluster('couchbase://localhost')
-authenticator = PasswordAuthenticator('DavidH', 'Warframe')
+authenticator = PasswordAuthenticator('username', 'password')
 #(username, password) created in couchbase with the cluster. user needs to have read and write privleges
 cluster.authenticate(authenticator)
 bucket = cluster.open_bucket('Rewards')
